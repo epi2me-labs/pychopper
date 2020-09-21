@@ -68,6 +68,10 @@ parser.add_argument(
     '-B', metavar='batch_size', type=int, default=1000, help="Maximum number of reads processed in each batch (1000000).")
 parser.add_argument(
     '-D', metavar='read stats', type=str, default=None, help="Tab separated file with per-read stats (None).")
+parser.add_argument(
+    '-y', action='store_true', default=False, help="Output FASTQ comment as BAM tags. Use with minimap2 -y to pass UMI and additional info into BAM file.")
+parser.add_argument(
+    '-U', action='store_true', default=False, help="Detect UMIs")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', nargs="?", type=str, default="-", help="Output file.")
 
@@ -406,7 +410,7 @@ if __name__ == '__main__':
                 _update_stats(st, d_fh, segments, hits, usable_len, read)
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
-                for trim_read in chopper.segments_to_reads(read, segments, args.p):
+                for trim_read in chopper.segments_to_reads(read, segments, args.p, args.y, args.U):
                     if args.l is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
                         seu.writefq(trim_read, l_fh)
