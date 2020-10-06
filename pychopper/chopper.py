@@ -89,7 +89,11 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
         # Format FASTQ name and comment
         sr_id = "{}:{}|".format(Start, End)
         if bam_tags:
-            name, comment = read.Name.split(" ", 1)
+            try:
+                name, comment = read.Name.split(" ", 1)
+            except ValueError:
+                name = read.Name
+                comment = ""
             sr_name = sr_id + name + " CO:Z:" + comment + "\tTS:A:{}".format(s.Strand)
         else:
             sr_name = sr_id + read.Name + " strand=" + s.Strand
