@@ -22,6 +22,7 @@ def _find_umi_single(params):
     "Find UMI in a single reads using the edlib/parasail backend"
     read = params[0]
     max_ed = params[1]
+    normalise = False
 
     pattern_list = [
         (
@@ -61,6 +62,15 @@ def _find_umi_single(params):
     # Extract and normalise UMI
     umi = ""
     pattern, wildcard, equalities, forward = best_pattern
+    ed = best_result["editDistance"]
+    if not normalise:
+        locs = best_result["locations"][0]
+        umi = read[locs[0]:locs[1]+1]
+        if not forward:
+            umi = seu.reverse_complement(umi)
+
+        return umi, ed
+
     align = edlib.getNiceAlignment(best_result, pattern, read)
     for q, t in zip(align['query_aligned'], align['target_aligned']):
         if q != wildcard:
