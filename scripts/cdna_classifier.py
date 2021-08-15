@@ -32,7 +32,7 @@ parser.add_argument(
 parser.add_argument(
     '-k', metavar='kit', type=str, default="PCS109", help="Use primer sequences from this kit (PCS109).")
 parser.add_argument(
-    '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
+    '-q', metavar='cutoff', type=float, default=0.00001, help="Cutoff parameter (autotuned).")
 parser.add_argument(
     '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
 parser.add_argument(
@@ -64,7 +64,7 @@ parser.add_argument(
 parser.add_argument(
     '-t', metavar='threads', type=int, default=8, help="Number of threads to use (8).")
 parser.add_argument(
-    '-B', metavar='batch_size', type=int, default=1000000, help="Maximum number of reads processed in each batch (1000000).")
+    '-B', metavar='batch_size', type=int, default=1000, help="Maximum number of reads processed in each batch (1000000).")
 parser.add_argument(
     '-D', metavar='read stats', type=str, default=None, help="Tab separated file with per-read stats (None).")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
@@ -309,9 +309,9 @@ if __name__ == '__main__':
         d_fh.write("Read\tLength\tStatus\tStart\tEnd\tStrand\n")
 
     st = _new_stats()
-    input_size = None
-    if args.input_fastx != "-":
-        input_size = os.stat(args.input_fastx).st_size
+    #input_size = None
+    #if args.input_fastx != "-":
+    #    input_size = os.stat(args.input_fastx).st_size
 
     if args.q is None and args.Y <= 0:
         sys.stderr.write("Please specifiy either -q or -Y!")
@@ -329,7 +329,7 @@ if __name__ == '__main__':
         raise Exception("Invalid backend!")
 
     # Pick the -q maximizing the number of classified reads using grid search:
-    nr_records = None
+    #nr_records = None
     tune_df = None
     q_bak = args.q
     if args.q is None:
@@ -340,17 +340,17 @@ if __name__ == '__main__':
             cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
         class_reads = []
         class_readLens = []
-        nr_records = utils.count_fastq_records(args.input_fastx, opener=_opener)
-        opt_batch = int(nr_records / args.t)
-        if opt_batch < args.B:
-            args.B = opt_batch
+        #nr_records = utils.count_fastq_records(args.input_fastx, opener=_opener)
+        #opt_batch = int(nr_records / args.t)
+        #if opt_batch < args.B:
+        #    args.B = opt_batch
         target_prop = 1.0
-        if nr_records > args.Y:
-            target_prop = args.Y / float(nr_records)
-        if target_prop > 1.0:
-            target_prop = 1.0
+        #if nr_records > args.Y:
+        #    target_prop = args.Y / float(nr_records)
+        #if target_prop > 1.0:
+        #    target_prop = 1.0
         sys.stderr.write("Counting fastq records in input file: {}\n".format(args.input_fastx))
-        sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
+        #sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
         read_sample = list(seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
         sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(len(read_sample), target_prop * 100.0, args.Q))
         sys.stderr.write("Optimizing over {} cutoff values.\n".format(args.L))
@@ -381,14 +381,15 @@ if __name__ == '__main__':
             sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
         sys.stderr.write("Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
 
-    if nr_records is not None:
-        input_size = nr_records
-        if args.B > nr_records:
-            args.B = nr_records
-        if args.B == 0:
-            args.B = 1
+    #if nr_records is not None:
+    #    input_size = nr_records
+    #    if args.B > nr_records:
+    #        args.B = nr_records
+    #    if args.B == 0:
+    #        args.B = 1
+
     sys.stderr.write("Processing the whole dataset using a batch size of {}:\n".format(args.B))
-    pbar = tqdm.tqdm(total=input_size)
+    pbar = tqdm.tqdm(unit=" reads")
     min_batch_size = max(int(args.B / args.t), 1)
     rfq_sup = {"out_fq": args.K, "pass": 0, "total": 0}
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
@@ -409,10 +410,10 @@ if __name__ == '__main__':
                         seu.writefq(trim_read, out_fh)
                     if args.w is not None and len(segments) > 1:
                         seu.writefq(trim_read, w_fh)
-                if nr_records is None:
-                    pbar.update(seu.record_size(read, 'fastq'))
-                else:
-                    pbar.update(1)
+                #if nr_records is None:
+                #    pbar.update(seu.record_size(read, 'fastq'))
+                #else:
+                pbar.update(1)
     pbar.close()
     sys.stderr.write("Finished processing file: {}\n".format(args.input_fastx))
     fail_nr = rfq_sup["total"] - rfq_sup["pass"]
