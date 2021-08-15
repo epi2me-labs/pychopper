@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import numpy as np
 from pychopper import seq_utils as seu
 from pychopper import hmmer_backend, edlib_backend
@@ -101,11 +102,12 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
         if len(segments) > 1:
             sr_name += " rescue=1"
 
+        umi = None
         if detect_umis:
             max_umi_ed = 3
             # Detect UMIs
             # Get adapters for UMI serach
-            padding = 20
+            padding = 40
             p1_from = max(0, s.Left - padding)
             p1_to = min(len(read.Seq), s.Start + padding)
             p_1 = read.Seq[p1_from:p1_to]
@@ -120,7 +122,7 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
                 sr_name += " umi={}".format(umi)
 
         sr_seq = read.Seq[Start:End]
-        sr = Seq(sr_id + read.Id, sr_name, sr_seq, read.Qual[Start:End] if read.Qual is not None else None)
+        sr = Seq(sr_id + read.Id, sr_name, sr_seq, read.Qual[Start:End] if read.Qual is not None else None, umi)
         if s.Strand == '-':
             sr = seu.revcomp_seq(sr)
         yield sr

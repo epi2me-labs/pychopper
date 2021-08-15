@@ -90,6 +90,8 @@ def _new_stats():
     st["LenFail"] = 0
     st["QcFail"] = 0
     st["PassReads"] = 0
+    st["Umi_detected"] = 0
+    st["Umi_detected_final"] = 0
     return st
 
 
@@ -166,6 +168,13 @@ def _process_stats(st):
         res["Category"] += ["Hits"]
         res["Name"] += [k]
         res["Value"] += [v]
+
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["Umi_detected"]
+    res["Value"] += [st["Umi_detected"]]
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["Umi_detected_final"]
+    res["Value"] += [st["Umi_detected_final"]]
     res = pd.DataFrame(res)
     return res
 
@@ -224,18 +233,25 @@ def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
         report.save_close()
 
 
-def _plot_stats(st, pdf):
+def _plot_stats(st, pdf, detect_umi):
     "Generate plots and save to report PDF"
     R = report.Report(pdf)
     rs = st.loc[st.Category == "Classification", ]
     _plot_pd_bars(rs.copy(), "Classification of output reads", R, ann=True)
     found, rescue, unusable = float(rs.loc[rs.Name == "Primers_found", ].Value), float(rs.loc[rs.Name == "Rescue", ].Value), float(rs.loc[rs.Name == "Unusable", ].Value)
+    rs_stats = st.loc[st.Category == "ReadStats", ]
+    umi_detected = float(rs_stats.loc[rs_stats.Name == "Umi_detected", ].Value)
+    umi_detected_final = float(rs_stats.loc[rs_stats.Name == "Umi_detected_final", ].Value)
     total = found + rescue + unusable
     found = found / total * 100
     rescue = rescue / total * 100
     unusable = unusable / total * 100
+    umi_detected_final = umi_detected_final / total * 100
     sys.stderr.write("-----------------------------------\n")
-    sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
+    if detect_umi:
+        sys.stderr.write("Reads with two primers:\t{:.2f}% (with UMI {:.2f}%)\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, umi_detected_final, rescue, unusable))
+    else:
+        sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
     sys.stderr.write("-----------------------------------\n")
     _plot_pd_bars(st.loc[st.Category == "Strand", ].copy(), "Strand of oriented reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "RescueStrand", ].copy(), "Strand of rescued reads", R, ann=True)
@@ -411,11 +427,15 @@ if __name__ == '__main__':
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
                 for trim_read in chopper.segments_to_reads(read, segments, args.p, args.y, args.U):
+                    if trim_read.Umi:
+                        st["Umi_detected"] += 1
                     if args.l is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
                         seu.writefq(trim_read, l_fh)
                         continue
                     if len(segments) == 1:
+                        if trim_read.Umi:
+                            st["Umi_detected_final"] += 1
                         seu.writefq(trim_read, out_fh)
                     if args.w is not None and len(segments) > 1:
                         seu.writefq(trim_read, w_fh)
@@ -450,4 +470,5 @@ if __name__ == '__main__':
         fh.close()
 
     if args.r is not None:
-        _plot_stats(stdf, args.r)
+        _plot_stats(stdf, args.r, args.U)
+
