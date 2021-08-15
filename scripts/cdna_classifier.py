@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import io
 import sys
 import numpy as np
 import pandas as pd
@@ -32,7 +33,7 @@ parser.add_argument(
 parser.add_argument(
     '-k', metavar='kit', type=str, default="PCS109", help="Use primer sequences from this kit (PCS109).")
 parser.add_argument(
-    '-q', metavar='cutoff', type=float, default=0.00001, help="Cutoff parameter (autotuned).")
+    '-q', metavar='cutoff', type=str, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
     '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
 parser.add_argument(
@@ -246,7 +247,11 @@ def _plot_stats(st, pdf):
 
 
 def _opener(filename, mode, encoding='utf8'):
-    if filename.endswith('.gz'):
+    if filename == '-':
+        #sys.stderr.write("Reading from stdin\n")
+        #return open(sys.stdin.buff, mode, encoding=encoding)
+        return io.TextIOWrapper(sys.stdin.buffer, encoding=encoding)
+    elif filename.endswith('.gz'):
         return gzip.open(filename, mode + 't', encoding=encoding)
     else:
         return open(filename, mode, encoding=encoding)
@@ -279,9 +284,9 @@ if __name__ == '__main__':
     sys.stderr.write("Using kit: {}\n".format(args.k))
     sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
 
-    in_fh = sys.stdin
-    if args.input_fastx != '-':
-        in_fh = _opener(args.input_fastx, "r")
+    #in_fh = sys.stdin
+    #if args.input_fastx != '-':
+    in_fh = _opener(args.input_fastx, "r")
 
     out_fh = sys.stdout
     if args.output_fastx != '-':
@@ -320,9 +325,13 @@ if __name__ == '__main__':
         all_primers = seu.get_primers(args.b)
 
     if args.m == "phmm":
+        if args.q is None:
+            args.q = "0.00001"
         def backend(x, pool, q=None, mb=None):
             return chopper.chopper_phmm(x, args.g, config, q, args.t, pool, mb)
     elif args.m == "edlib":
+        if args.q is None:
+            args.q = "0.5"
         def backend(x, pool, q=None, mb=None):
             return chopper.chopper_edlib(x, all_primers, config, q * 1.2, q, pool, mb)
     else:
@@ -332,7 +341,10 @@ if __name__ == '__main__':
     #nr_records = None
     tune_df = None
     q_bak = args.q
-    if args.q is None:
+    if args.q == 'auto':
+        if args.input_fastx == '-':
+            sys.stderr.write("Can't auto tune -q when reading from stdin.\n")
+            sys.exit(1)
         nr_cutoffs = args.L
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
         cutoffs = cutoffs / cutoffs[-1]
@@ -340,15 +352,7 @@ if __name__ == '__main__':
             cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
         class_reads = []
         class_readLens = []
-        #nr_records = utils.count_fastq_records(args.input_fastx, opener=_opener)
-        #opt_batch = int(nr_records / args.t)
-        #if opt_batch < args.B:
-        #    args.B = opt_batch
         target_prop = 1.0
-        #if nr_records > args.Y:
-        #    target_prop = args.Y / float(nr_records)
-        #if target_prop > 1.0:
-        #    target_prop = 1.0
         sys.stderr.write("Counting fastq records in input file: {}\n".format(args.input_fastx))
         #sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
         read_sample = list(seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
@@ -380,7 +384,8 @@ if __name__ == '__main__':
         if best_qi == (len(class_reads) - 1):
             sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
         sys.stderr.write("Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
-
+    else:
+        args.q = float(args.q)
     #if nr_records is not None:
     #    input_size = nr_records
     #    if args.B > nr_records:

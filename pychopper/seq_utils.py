@@ -92,7 +92,7 @@ def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator f
                         oseq = Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)
                         if tsup:
                             rfq_sup["total"] += 1
-                        if not (min_qual is not None and mean_qual(quals) < min_qual):
+                        if not (min_qual is not None and min_qual > 0 and mean_qual(quals) < min_qual):
                             if tsup:
                                 rfq_sup["pass"] += 1
                             yield oseq
