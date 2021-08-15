@@ -248,7 +248,7 @@ def _plot_stats(st, pdf):
 
 def _opener(filename, mode, encoding='utf8'):
     if filename == '-':
-        #sys.stderr.write("Reading from stdin\n")
+        sys.stderr.write("Reading from stdin\n")
         #return open(sys.stdin.buff, mode, encoding=encoding)
         return io.TextIOWrapper(sys.stdin.buffer, encoding=encoding)
     elif filename.endswith('.gz'):
