@@ -2,4 +2,4 @@
 
 __author__ = 'ONT Applications Group'
 __email__ = 'Apps@nanoporetech.com'
-__version__ = '2.6.0'
+__version__ = '2.7.0'
