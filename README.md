@@ -27,7 +27,7 @@ Getting Started
 Install using conda :
 
 ```bash
-conda install -c conda-forge -c bioconda "epi2melabs::pychopper"
+conda install -c epi2melabs -c conda-forge -c bioconda "epi2melabs::pychopper"
 ```
 
 ## Usage
