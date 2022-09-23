@@ -2,6 +2,7 @@
 
 import edlib
 
+from pychopper import seq_utils as seu
 from pychopper.common_structures import Hit
 from pychopper import utils
 from pychopper.parasail_backend import refine_locations
@@ -15,6 +16,76 @@ def find_locations(reads, all_primers, max_ed, pool, min_batch):
                 yield res
             except StopIteration:
                 return
+
+
+def _find_umi_single(params):
+    "Find UMI in a single reads using the edlib/parasail backend"
+    read = params[0]
+    max_ed = params[1]
+    normalise = False
+
+    pattern_list = [
+        (
+            "TTTVVVVTTVVVVTTVVVVTTVVVVTTT",
+            "V",
+            [("V", "A"), ("V", "G"), ("V", "C")],
+            True
+        ),
+        (
+            "AAABBBBAABBBBAABBBBAABBBBAAA",
+            "B",
+            [("B", "T"), ("B", "G"), ("B", "C")],
+            False
+        )
+    ]
+
+    best_ed = None
+    best_pattern = None
+    best_result = None
+    for pattern, wildcard, equalities, forward in pattern_list:
+        result = edlib.align(pattern,
+                             read,
+                             task="path",
+                             mode="HW",
+                             k=max_ed,
+                             additionalEqualities=equalities)
+        if result['editDistance'] == -1:
+            continue
+        if not best_ed or result['editDistance'] < best_ed:
+            best_ed = result['editDistance']
+            best_pattern = (pattern, wildcard, equalities, forward)
+            best_result = result
+
+    if best_ed is None:
+        return None, None
+
+    # Extract and normalise UMI
+    umi = ""
+    pattern, wildcard, equalities, forward = best_pattern
+    ed = best_result["editDistance"]
+    if not normalise:
+        locs = best_result["locations"][0]
+        umi = read[locs[0]:locs[1]+1]
+        if not forward:
+            umi = seu.reverse_complement(umi)
+
+        return umi, ed
+
+    align = edlib.getNiceAlignment(best_result, pattern, read)
+    for q, t in zip(align['query_aligned'], align['target_aligned']):
+        if q != wildcard:
+            continue
+        if t == '-':
+            umi += 'N'
+        else:
+            umi += t
+    if not forward:
+        umi = seu.reverse_complement(umi)
+
+    if len(umi) != 16:
+        raise RuntimeError("UMI length incorrect")
+
+    return umi, best_ed
 
 
 def _find_locations_single(params):

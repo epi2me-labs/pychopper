@@ -77,7 +77,7 @@ def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator f
             if sample is None or (random() < sample):
                 if tsup:
                     rfq_sup["total"] += 1
-                yield Seq(name.split(" ", 1)[0], name, ''.join(seqs), None)  # yield a fasta record
+                yield Seq(name.split(" ", 1)[0], name, ''.join(seqs), None, None)  # yield a fasta record
             if not last:
                 break
         else:  # this is a fastq record
@@ -89,10 +89,10 @@ def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator f
                     last = None
                     if sample is None or (random() < sample):
                         quals = "".join(seqs)
-                        oseq = Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)
+                        oseq = Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals, Umi=None)
                         if tsup:
                             rfq_sup["total"] += 1
-                        if not (min_qual is not None and mean_qual(quals) < min_qual):
+                        if not (min_qual is not None and min_qual > 0 and mean_qual(quals) < min_qual):
                             if tsup:
                                 rfq_sup["pass"] += 1
                             yield oseq
@@ -123,7 +123,7 @@ def revcomp_seq(seq):
     qual = seq.Qual
     if qual is not None:
         qual = qual[::-1]
-    return Seq(seq.Id, seq.Name, reverse_complement(seq.Seq), qual)
+    return Seq(seq.Id, seq.Name, reverse_complement(seq.Seq), qual, seq.Umi)
 
 
 def get_runid(desc):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import numpy as np
 from pychopper import seq_utils as seu
 from pychopper import hmmer_backend, edlib_backend
@@ -77,7 +78,7 @@ def analyse_hits(hits, config):
     return tuple(valid_segments), hits, tlen
 
 
-def segments_to_reads(read, segments, keep_primers):
+def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
     "Convert segments to output reads with annotation"
     for s in segments:
         Start = s.Start
@@ -85,12 +86,43 @@ def segments_to_reads(read, segments, keep_primers):
         if keep_primers:
             Start = s.Left
             End = s.Right
+
+        # Format FASTQ name and comment
         sr_id = "{}:{}|".format(Start, End)
-        sr_name = sr_id + read.Name + " strand=" + s.Strand
+        if bam_tags:
+            try:
+                name, comment = read.Name.split(" ", 1)
+            except ValueError:
+                name = read.Name
+                comment = ""
+            sr_name = sr_id + name + " CO:Z:" + comment + "\tTS:A:{}".format(s.Strand)
+        else:
+            sr_name = sr_id + read.Name + " strand=" + s.Strand
+
         if len(segments) > 1:
             sr_name += " rescue=1"
+
+        umi = None
+        if detect_umis:
+            max_umi_ed = 3
+            # Detect UMIs
+            # Get adapters for UMI serach
+            padding = 40
+            p1_from = max(0, s.Left - padding)
+            p1_to = min(len(read.Seq), s.Start + padding)
+            p_1 = read.Seq[p1_from:p1_to]
+            p2_from = max(0, s.End - padding)
+            p2_to = min(len(read.Seq), s.Right + padding)
+            p_2 = read.Seq[p2_from:p2_to]
+
+            umi, d = edlib_backend._find_umi_single([p_1 + 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' + p_2, max_umi_ed])
+            if bam_tags:
+                sr_name += "\tRX:Z:{}".format(umi)
+            else:
+                sr_name += " umi={}".format(umi)
+
         sr_seq = read.Seq[Start:End]
-        sr = Seq(sr_id + read.Id, sr_name, sr_seq, read.Qual[Start:End] if read.Qual is not None else None)
+        sr = Seq(sr_id + read.Id, sr_name, sr_seq, read.Qual[Start:End] if read.Qual is not None else None, umi)
         if s.Strand == '-':
             sr = seu.revcomp_seq(sr)
         yield sr
