@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import io
 import sys
 import numpy as np
 import pandas as pd
@@ -32,6 +33,8 @@ def _new_stats():
     st["LenFail"] = 0
     st["QcFail"] = 0
     st["PassReads"] = 0
+    st["Umi_detected"] = 0
+    st["Umi_detected_final"] = 0
     return st
 
 
@@ -108,6 +111,13 @@ def _process_stats(st):
         res["Category"] += ["Hits"]
         res["Name"] += [k]
         res["Value"] += [v]
+
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["Umi_detected"]
+    res["Value"] += [st["Umi_detected"]]
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["Umi_detected_final"]
+    res["Value"] += [st["Umi_detected_final"]]
     res = pd.DataFrame(res)
     return res
 
@@ -166,18 +176,25 @@ def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
         report.save_close()
 
 
-def _plot_stats(st, pdf, q, q_bak):
+def _plot_stats(st, pdf, q, q_bak, detect_umi):
     "Generate plots and save to report PDF"
     R = report.Report(pdf)
     rs = st.loc[st.Category == "Classification", ]
     _plot_pd_bars(rs.copy(), "Classification of output reads", R, ann=True)
     found, rescue, unusable = float(rs.loc[rs.Name == "Primers_found", ].Value), float(rs.loc[rs.Name == "Rescue", ].Value), float(rs.loc[rs.Name == "Unusable", ].Value)
+    rs_stats = st.loc[st.Category == "ReadStats", ]
+    umi_detected = float(rs_stats.loc[rs_stats.Name == "Umi_detected", ].Value)
+    umi_detected_final = float(rs_stats.loc[rs_stats.Name == "Umi_detected_final", ].Value)
     total = found + rescue + unusable
     found = found / total * 100
     rescue = rescue / total * 100
     unusable = unusable / total * 100
+    umi_detected_final = umi_detected_final / total * 100
     sys.stderr.write("-----------------------------------\n")
-    sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
+    if detect_umi:
+        sys.stderr.write("Reads with two primers:\t{:.2f}% (with UMI {:.2f}%)\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, umi_detected_final, rescue, unusable))
+    else:
+        sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
     sys.stderr.write("-----------------------------------\n")
     _plot_pd_bars(st.loc[st.Category == "Strand", ].copy(), "Strand of oriented reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "RescueStrand", ].copy(), "Strand of rescued reads", R, ann=True)
@@ -193,7 +210,11 @@ def _plot_stats(st, pdf, q, q_bak):
 
 
 def _opener(filename, mode, encoding='utf8'):
-    if filename.endswith('.gz'):
+    if filename == '-':
+        sys.stderr.write("Reading from stdin\n")
+        #return open(sys.stdin.buff, mode, encoding=encoding)
+        return io.TextIOWrapper(sys.stdin.buffer, encoding=encoding)
+    elif filename.endswith('.gz'):
         return gzip.open(filename, mode + 't', encoding=encoding)
     else:
         return open(filename, mode, encoding=encoding)
@@ -273,6 +294,13 @@ def main():
     parser.add_argument(
         '-D', metavar='read stats', type=str, default=None,
         help="Tab separated file with per-read stats (None).")
+    parser.add_argument(
+        '-y', action='store_true', default=False,
+        help="Output FASTQ comment as BAM tags. Use with minimap2 -y to pass UMI and additional info into BAM file.")
+    parser.add_argument(
+        '-U', action='store_true', default=False,
+        help="Detect UMIs")
+
     parser.add_argument('input_fastx', metavar='input_fastx', type=str,
                         help="Input file.")
     parser.add_argument('output_fastx', metavar='output_fastx', nargs="?",
@@ -381,6 +409,7 @@ def main():
         raise Exception("Invalid backend!")
 
     # Pick the -q maximizing the number of classified reads using grid search:
+    #nr_records = None
     nr_records = None
     tune_df = None
     q_bak = args.q
@@ -476,19 +505,23 @@ def main():
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
                 for trim_read in chopper.segments_to_reads(read, segments,
-                                                           args.p):
+                                                           args.p, args.y, args.U):
+                    if trim_read.Umi:
+                        st["Umi_detected"] += 1
                     if args.l is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
                         seu.writefq(trim_read, l_fh)
                         continue
                     if len(segments) == 1:
+                        if trim_read.Umi:
+                            st["Umi_detected_final"] += 1
                         seu.writefq(trim_read, out_fh)
                     if args.w is not None and len(segments) > 1:
                         seu.writefq(trim_read, w_fh)
-                if nr_records is None:
-                    pbar.update(seu.record_size(read, 'fastq'))
-                else:
-                    pbar.update(1)
+                #if nr_records is None:
+                #    pbar.update(seu.record_size(read, 'fastq'))
+                #else:
+                pbar.update(1)
     pbar.close()
     sys.stderr.write("Finished processing file: {}\n".format(args.input_fastx))
     fail_nr = rfq_sup["total"] - rfq_sup["pass"]
@@ -520,7 +553,7 @@ def main():
         fh.close()
 
     if args.r is not None:
-        _plot_stats(stdf, args.r, args.q, q_bak)
+        _plot_stats(stdf, args.r, args.q, q_bak, args.U)
 
 
 if __name__ == '__main__':
