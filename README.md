@@ -76,6 +76,9 @@ optional arguments:
   -t threads           Number of threads to use (8).
   -B batch_size        Maximum number of reads processed in each batch
                        (1000000).
+  -y fastq_comments    Use with minimap2 -y to pass UMI and additional info into BAM file (false).
+  -U umi               Detect umis. 
+  
 ```
 
 *WARNING: Do not turn on trimming during basecalling as it will remove the primers needed for classifying the reads!*
@@ -112,6 +115,27 @@ The `pHMM` alignment backend takes a "compressed" profile HMM trained from a mul
 
 ```bash
 pychopper -m phmm -g MySSP_MyVNP.hmm -c primer_config.txt input.fq full_length_output.fq
+```
+
+### UMI detection
+Detect umis in input reads using `-U` 
+#### FASTQ output example:
+```bash
+pychopper -U -k PCS111 -m edlib pychopper/tests/data/PCS111_umi_test_reads.fastq -
+```
+will add:
+```
+umi=TTTGCCATTGAAATTAGCGTTCGCCTT
+```
+to the FASTQ header in the output file.
+
+#### BAM output example:
+```bash
+pychopper -U -y -k PCS111 -m edlib pychopper/tests/data/PCS111_umi_test_reads.fastq - | minimap2 -y ... 
+```
+will create a BAM file with the following tags containing the UMI:
+```
+RX:Z:TTTGCCATTGAAATTAGCGTTCGCCTT
 ```
 
 Help

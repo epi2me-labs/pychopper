@@ -18,7 +18,7 @@ def find_locations(reads, all_primers, max_ed, pool, min_batch):
                 return
 
 
-def _find_umi_single(params):
+def find_umi_single(params):
     "Find UMI in a single reads using the edlib/parasail backend"
     read = params[0]
     max_ed = params[1]
