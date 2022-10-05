@@ -106,7 +106,7 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
         if detect_umis:
             max_umi_ed = 3
             # Detect UMIs
-            # Get adapters for UMI serach
+            # Get adapters for UMI search
             padding = 40
             p1_from = max(0, s.Left - padding)
             p1_to = min(len(read.Seq), s.Start + padding)
@@ -115,7 +115,8 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
             p2_to = min(len(read.Seq), s.Right + padding)
             p_2 = read.Seq[p2_from:p2_to]
 
-            umi, d = edlib_backend._find_umi_single([p_1 + 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' + p_2, max_umi_ed])
+            umi, _ = edlib_backend._find_umi_single(
+                [p_1 + 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' + p_2, max_umi_ed])
             if bam_tags:
                 sr_name += "\tRX:Z:{}".format(umi)
             else:
