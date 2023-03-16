@@ -45,19 +45,16 @@ def analyse_hits(hits, config):
 
     # Fill in DP matrix:
     for j in range(1, nr):
-        for i in range(2):
-            if i == 0:
-                # First row holds excluded segments.
-                # The can transition from eiter exluded or included segments:
-                M[i, j] = M[0, j - 1]
-                B[i, j] = (0, j - 1)
-                if M[1, j - 1] > M[0, j - 1]:
-                    M[i, j] = M[1, j - 1]
-                    B[i, j] = (1, j - 1)
-            elif i == 1:
-                # Included segments can only transition from previosuly excluded segments:
-                M[i, j] = M[0, j - 1] + segments[j].Len
-                B[i, j] = (0, j - 1)
+        # First row holds excluded segments.
+        # The can transition from eiter exluded or included segments:
+        M[0, j] = M[0, j - 1]
+        B[0, j] = (0, j - 1)
+        if M[1, j - 1] > M[0, j - 1]:
+            M[0, j] = M[1, j - 1]
+            B[0, j] = (1, j - 1) 
+        # Included segments can only transition from previously excluded segments:
+        M[1, j] = M[0, j - 1] + segments[j].Len
+        B[1, j] = (0, j - 1)
 
     tlen = np.argmax(M[:, nr - 1])
     valid_segments = []
