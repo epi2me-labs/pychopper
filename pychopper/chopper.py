@@ -13,14 +13,14 @@ def _build_segments(hits, config):
     segments = []
     if len(hits) == 0:
         return tuple(segments)
-    for s in zip(hits, hits[1:]):
+    for s0,s1 in zip(hits, hits[1:]):
         strand = None
         seg_len = 0
-        c = (s[0].Query, s[1].Query)
+        c = (s0.Query, s1.Query)
         if c in config:
             strand = config[c]
-            seg_len = s[1].RefStart - s[0].RefEnd
-        segments.append(Segment(s[0].RefStart, s[0].RefEnd, s[1].RefStart, s[1].RefEnd, strand, seg_len))
+            seg_len = s1.RefStart - s0.RefEnd
+        segments.append(Segment(s0.RefStart, s0.RefEnd, s1.RefStart, s1.RefEnd, strand, seg_len))
     return tuple(segments)
 
 
