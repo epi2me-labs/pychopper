@@ -27,7 +27,7 @@ def _parse_hmmscan_tab(lines, reads):
     for x, y in itertools.groupby(res, lambda x: x.Ref):
         buff[x] = list(y)
     for r in reads:
-        yield buff[r.Id]
+        yield buff[r.Id.split()[0]]
 
 
 def find_locations(reads, phmm_file, E, pool, min_batch):
