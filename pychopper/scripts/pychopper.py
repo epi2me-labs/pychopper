@@ -289,8 +289,8 @@ def main():
         '-t', metavar='threads', type=int, default=8,
         help="Number of threads to use (8).")
     parser.add_argument(
-        '-B', metavar='batch_size', type=int, default=1000000,
-        help="Maximum number of reads processed in each batch (1000000).")
+        '-B', metavar='batch_size', type=int, default=10000,
+        help="Maximum number of reads processed in each batch (10000).")
     parser.add_argument(
         '-D', metavar='read stats', type=str, default=None,
         help="Tab separated file with per-read stats (None).")

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## ['Unreleased']
 ### Changed
 - Fixes for pandas v2 concat api changes
+- set default batchsize to 10,000
 
 ## [v2.7.2]
 ### Added
