@@ -27,7 +27,7 @@ Getting Started
 Install using conda :
 
 ```bash
-conda install -c epi2melabs -c conda-forge -c bioconda "epi2melabs::pychopper"
+conda install -c nanoporetech -c conda-forge -c bioconda "nanoporetech::pychopper"
 ```
 
 ## Usage
