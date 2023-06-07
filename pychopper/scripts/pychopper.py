@@ -358,10 +358,6 @@ def main():
     sys.stderr.write("Using kit: {}\n".format(args.k))
     sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
 
-    in_fh = sys.stdin
-    if args.input_fastx != '-':
-        in_fh = _opener(args.input_fastx, "r")
-
     out_fh = sys.stdout
     if args.output_fastx != '-':
         out_fh = open(args.output_fastx, "w")
@@ -437,8 +433,7 @@ def main():
         sys.stderr.write(
             "Total fastq records in input file: {}\n".format(nr_records))
         read_sample = list(
-            seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop,
-                       min_qual=args.Q))
+            seu.readfq(args.input_fastx, sample=target_prop, min_qual=args.Q))
         sys.stderr.write(
             "Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(
                 len(read_sample), target_prop * 100.0, args.Q))
@@ -446,15 +441,10 @@ def main():
         for qv in tqdm.tqdm(cutoffs):
             clsLen = 0
             cls = 0
-            with concurrent.futures.ProcessPoolExecutor(
-                    max_workers=args.t) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
                 for batch in utils.batch(read_sample, int((len(read_sample)))):
-                    for read, (segments, hits, usable_len) in backend(batch,
-                                                                      executor,
-                                                                      qv,
-                                                                      max(1000,
-                                                                          int((
-                                                                              len(read_sample)) / args.t))):
+                    for read, (segments, hits, usable_len) \
+                            in backend(batch, executor, qv, max(1000, int((len(read_sample)) / args.t))):
                         flt = list([x.Len for x in segments if x.Len > 0])
                         if len(flt) == 1:
                             clsLen += sum(flt)
@@ -494,7 +484,7 @@ def main():
     with concurrent.futures.ProcessPoolExecutor(
             max_workers=args.t) as executor:
         for batch in utils.batch(
-                seu.readfq(in_fh, min_qual=args.Q, rfq_sup=rfq_sup), args.B):
+                seu.readfq(args.input_fastx, min_qual=args.Q, rfq_sup=rfq_sup), args.B):
             for read, (segments, hits, usable_len) in backend(batch, executor,
                                                               q=args.q,
                                                               mb=min_batch_size):
@@ -546,7 +536,7 @@ def main():
     if args.S is not None:
         stdf.to_csv(args.S, sep="\t", index=False)
 
-    for fh in (in_fh, out_fh, u_fh, l_fh, w_fh, a_fh, d_fh):
+    for fh in (out_fh, u_fh, l_fh, w_fh, a_fh, d_fh):
         if fh is None:
             continue
         fh.flush()

@@ -2,6 +2,7 @@
 
 from six.moves import reduce
 from numpy.random import random
+from pysam import FastxFile
 from math import log
 import sys
 from pychopper.common_structures import Seq
@@ -49,7 +50,7 @@ def reverse_complement(seq):
     return reduce(lambda x, y: x + y, map(base_complement, seq[::-1]))
 
 
-def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator function
+def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator function
     """
     Below function taken from https://github.com/lh3/readfq/blob/master/readfq.py
     Much faster parsing of large files compared to Biopyhton.
@@ -58,53 +59,23 @@ def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator f
     tsup = "total" in rfq_sup
     if sup:
         fh = open(rfq_sup["out_fq"], "w")
-    last = None  # this is a buffer keeping the last unprocessed line
-    while True:  # mimic closure; is it a bad idea?
-        if not last:  # the first record or a record following a fastq
-            for l in fp:  # search for the start of the next record
-                if l[0] in '>@':  # fasta/q header line
-                    last = l[:-1]  # save this line
-                    break
-        if not last:
-            break
-        name, seqs, last = last[1:], [], None
-        for l in fp:  # read the sequence
-            if l[0] in '@+>':
-                last = l[:-1]
-                break
-            seqs.append(l[:-1])
-        if not last or last[0] != '+':  # this is a fasta record
+
+    with FastxFile(fastq) as fqin:
+        for fx in fqin:
             if sample is None or (random() < sample):
                 if tsup:
                     rfq_sup["total"] += 1
-                yield Seq(name.split(" ", 1)[0], name, ''.join(seqs), None, None)  # yield a fasta record
-            if not last:
-                break
-        else:  # this is a fastq record
-            seq, leng, seqs = ''.join(seqs), 0, []
-            for l in fp:  # read the quality
-                seqs.append(l[:-1])
-                leng += len(l) - 1
-                if leng >= len(seq):  # have read enough quality
-                    last = None
-                    if sample is None or (random() < sample):
-                        quals = "".join(seqs)
-                        oseq = Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals, Umi=None)
-                        if tsup:
-                            rfq_sup["total"] += 1
-                        if not (min_qual is not None and min_qual > 0 and mean_qual(quals) < min_qual):
-                            if tsup:
-                                rfq_sup["pass"] += 1
-                            yield oseq
-                        else:
-                            if sup:
-                                writefq(oseq, fh)
-                    break
-            if last:  # reach EOF before reading enough quality
-                if sample is None or (random() < sample):
-                    yield Seq(name.split(" ", 1)[0], name, seq, None)  # yield a fasta record instead
-                break
-
+                qual_array = fx.get_quality_array()
+                if qual_array is None or \
+                        not (sum(qual_array) / len(qual_array)) < min_qual:
+                    if tsup:
+                        rfq_sup["pass"] += 1
+                    yield Seq(
+                        Id=fx.name, Name=f"{fx.name} {fx.comment}",
+                        Seq=fx.sequence, Qual=fx.quality, Umi=None)
+                else:
+                    if sup:
+                        fh.write(str(fx))
     if sup:
         fh.flush()
         fh.close()
