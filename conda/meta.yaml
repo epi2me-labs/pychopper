@@ -29,6 +29,7 @@ requirements:
     - six
     - pandas
     - numpy
+    - pysam
 
 test:
   commands:
