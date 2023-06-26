@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Fix
+- Literal None appended to sequence names when sequence comment is blank
+
 ## [v2.7.5]
 ### Fixed
 - CI conda release issue 
 ### Changed
 - License
+- Use pysam for fastx reading
 
 ## [v2.7.3]
 ### Changed

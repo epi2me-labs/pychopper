@@ -71,7 +71,8 @@ def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator f
                     if tsup:
                         rfq_sup["pass"] += 1
                     yield Seq(
-                        Id=fx.name, Name=f"{fx.name} {fx.comment}",
+                        Id=fx.name,
+                        Name=f"{fx.name} {fx.comment}" if fx.comment else fx.name,
                         Seq=fx.sequence, Qual=fx.quality, Umi=None)
                 else:
                     if sup:
@@ -123,7 +124,7 @@ def record_size(read, in_format='fastq'):
 def get_primers(primers):
     "Load primers from fasta file"
     all_primers = {}
-    for primer in readfq(open(primers, 'r')):
+    for primer in readfq(primers):
         all_primers[primer.Name] = primer.Seq
         all_primers['-' + primer.Name] = reverse_complement(primer.Seq)
     return all_primers
