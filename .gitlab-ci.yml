@@ -3,6 +3,8 @@ include:
       file: "push-github.yaml"
     - project: "epi2melabs/ci-templates"
       file: "push-conda.yaml"
+    - project: "epi2melabs/ci-templates"
+      file: "snippets.yaml"
 
 image: ${UBUNTUIMAGE}:20.04
 
@@ -19,29 +21,13 @@ stages:
     - release
     - postrelease
 
-# Insist that the version in __init__.py matches the git tag
-.check-versions: &check-versions |
-    PYVER="v"$(grep "__version__ = " ${CI_PROJECT_NAME}/__init__.py | awk '{gsub("\"","",$3); print $3}')
-    TAGVER=${CI_COMMIT_TAG}
-    if [[ "${PYVER}" != "${TAGVER}" ]]; then
-        echo "Mismatching TAG and PACKAGE versions:"
-        echo " -     TAG:'$TAGVER'"
-        echo " - PACKAGE:'$TAGVER'"
-        exit 1
-    else
-        echo "TAG and PACKAGE versions agree: '${PYVER}'"
-    fi
-
-# Insist a CHANGELOG entry has been made for tags
-.check-changelog: &check-changelog |
-    TAGVER=${CI_COMMIT_TAG}
-    MATCHES=$(grep -c "## \[${TAGVER}\]" CHANGELOG.md || exit 0)
-    if [[ "${MATCHES}" != "1" ]]; then
-        echo "Expected one match to '${CI_COMMIT_TAG}' in CHANGELOG, found ${MATCHES}"
-        exit 1
-    else
-        echo "Found CHANGELOG.md entry for tag"
-    fi
+deploy-checks:
+    stage: prerelease
+    script:
+        - !reference [.check, python-version]
+        - !reference [.check, changelog]
+    rules:
+        - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
 
 test:
     stage: test
@@ -53,14 +39,6 @@ test:
     artifacts:
         paths:
             - dist/*.tar.gz
-
-deploy-checks:
-    stage: prerelease
-    script:
-        - *check-versions
-        - *check-changelog
-    rules:
-        - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
 
 conda:
     variables:
