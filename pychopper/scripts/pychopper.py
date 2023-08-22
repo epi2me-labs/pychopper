@@ -355,7 +355,7 @@ def main():
             CONFIG = "-:VNP,-VNP"
 
     config = utils.parse_config_string(CONFIG)
-    sys.stderr.write("Using kit: {}\n".format(args.k))
+    sys.stderr.write("Using kit: {}\n".format(args.b if args.b else args.k))
     sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
 
     out_fh = sys.stdout
