@@ -183,8 +183,7 @@ def _plot_stats(st, pdf, q, q_bak, detect_umi):
     _plot_pd_bars(rs.copy(), "Classification of output reads", R, ann=True)
     found, rescue, unusable = float(rs.loc[rs.Name == "Primers_found", ].Value), float(rs.loc[rs.Name == "Rescue", ].Value), float(rs.loc[rs.Name == "Unusable", ].Value)
     rs_stats = st.loc[st.Category == "ReadStats", ]
-    umi_detected = float(rs_stats.loc[rs_stats.Name == "Umi_detected", ].Value)
-    umi_detected_final = float(rs_stats.loc[rs_stats.Name == "Umi_detected_final", ].Value)
+    umi_detected_final = float(rs_stats.loc[rs_stats.Name == "Umi_detected_final", 'Value'].iloc[0])
     total = found + rescue + unusable
     found = found / total * 100
     rescue = rescue / total * 100
