@@ -497,9 +497,10 @@ def main():
                                                            args.p, args.y, args.U):
                     if trim_read.Umi:
                         st["Umi_detected"] += 1
-                    if args.l is not None and len(trim_read.Seq) < args.z:
+                    if len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
-                        seu.writefq(trim_read, l_fh)
+                        if args.l is not None:
+                            seu.writefq(trim_read, l_fh)
                         continue
                     if len(segments) == 1:
                         if trim_read.Umi:
