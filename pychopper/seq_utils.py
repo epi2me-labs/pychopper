@@ -51,9 +51,11 @@ def reverse_complement(seq):
 
 
 def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator function
-    """
-    Below function taken from https://github.com/lh3/readfq/blob/master/readfq.py
-    Much faster parsing of large files compared to Biopyhton.
+    """Read fastx files.
+
+    This is a generator function that yields sequtils.Seq objects.
+    Optionally filter by a minimum mean quality (min_qual).
+    Optionally subsample the fastx file using sample (0.0 - 1.0)
     """
     sup = ("out_fq" in rfq_sup) and (rfq_sup["out_fq"] is not None)
     tsup = "total" in rfq_sup
@@ -75,7 +77,7 @@ def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator f
                         Seq=fx.sequence, Qual=fx.quality, Umi=None)
                 else:
                     if sup:
-                        fh.write(str(fx))
+                        fh.write(f"{fx}\n")
     if sup:
         fh.flush()
         fh.close()
