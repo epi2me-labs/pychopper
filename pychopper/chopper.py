@@ -115,8 +115,18 @@ def segments_to_reads(read, segments, keep_primers, bam_tags, detect_umis):
             p2_to = min(len(read.Seq), s.Right + padding)
             p_2 = read.Seq[p2_from:p2_to]
 
+            # Create a single probe containing adapter-surrounding sequences.
+            # to be used in a single UMI search. Separate with 'N' spacer to prevent
+            # overlapping hits
+            umi_scan_seq = p_1 + 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' + p_2
+
+            # If the read is small and the adapter regions + padding overlap,
+            # then use only the whole read for the UMI search
+            if p1_to >= p2_from:
+                umi_scan_seq = read.Seq
+
             umi, _ = edlib_backend.find_umi_single(
-                [p_1 + 'NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN' + p_2, max_umi_ed])
+                [umi_scan_seq, max_umi_ed])
             if bam_tags:
                 sr_name += "\tRX:Z:{}".format(umi)
             else:
