@@ -22,7 +22,6 @@ def find_umi_single(params):
     "Find UMI in a single reads using the edlib/parasail backend"
     read = params[0]
     max_ed = params[1]
-    normalise = False
 
     pattern_list = [
         (
@@ -59,33 +58,18 @@ def find_umi_single(params):
     if best_ed is None:
         return None, None
 
-    # Extract and normalise UMI
-    umi = ""
+    # Extract UMI
     pattern, wildcard, equalities, forward = best_pattern
     ed = best_result["editDistance"]
-    if not normalise:
-        locs = best_result["locations"][0]
-        umi = read[locs[0]:locs[1]+1]
-        if not forward:
-            umi = seu.reverse_complement(umi)
 
-        return umi, ed
-
-    align = edlib.getNiceAlignment(best_result, pattern, read)
-    for q, t in zip(align['query_aligned'], align['target_aligned']):
-        if q != wildcard:
-            continue
-        if t == '-':
-            umi += 'N'
-        else:
-            umi += t
+    locs = best_result["locations"][0]
+    umi = read[locs[0]:locs[1]+1]
     if not forward:
         umi = seu.reverse_complement(umi)
-
-    if len(umi) != 16:
-        raise RuntimeError("UMI length incorrect")
-
-    return umi, best_ed
+    # Do not assign UMIs where UMI probe has aligned to the 'N' spacer.
+    if 'N' in umi:
+        return None, None
+    return umi, ed
 
 
 def _find_locations_single(params):
