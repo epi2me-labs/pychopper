@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Fixed
 - UMIs in short reads containing 'N'
+- Incorrect mean quality score calcualtion 
 
 ## [v2.7.6]
 ### Fix
