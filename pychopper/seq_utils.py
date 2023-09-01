@@ -67,9 +67,8 @@ def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator f
             if sample is None or (random() < sample):
                 if tsup:
                     rfq_sup["total"] += 1
-                qual_array = fx.get_quality_array()
-                if qual_array is None or \
-                        not (sum(qual_array) / len(qual_array)) < min_qual:
+                probs = [10 ** (q / -10) for q in fx.get_quality_array()]
+                if (-10 * log(sum(probs) / len(probs), 10)) >= min_qual:
                     if tsup:
                         rfq_sup["pass"] += 1
                     yield Seq(
