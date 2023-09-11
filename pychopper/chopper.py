@@ -13,14 +13,14 @@ def _build_segments(hits, config):
     segments = []
     if len(hits) == 0:
         return tuple(segments)
-    for s in zip(hits, hits[1:]):
+    for s0,s1 in zip(hits, hits[1:]):
         strand = None
         seg_len = 0
-        c = (s[0].Query, s[1].Query)
+        c = (s0.Query, s1.Query)
         if c in config:
             strand = config[c]
-            seg_len = s[1].RefStart - s[0].RefEnd
-        segments.append(Segment(s[0].RefStart, s[0].RefEnd, s[1].RefStart, s[1].RefEnd, strand, seg_len))
+            seg_len = s1.RefStart - s0.RefEnd
+        segments.append(Segment(s0.RefStart, s0.RefEnd, s1.RefStart, s1.RefEnd, strand, seg_len))
     return tuple(segments)
 
 
@@ -45,19 +45,16 @@ def analyse_hits(hits, config):
 
     # Fill in DP matrix:
     for j in range(1, nr):
-        for i in range(2):
-            if i == 0:
-                # First row holds excluded segments.
-                # The can transition from eiter exluded or included segments:
-                M[i, j] = M[0, j - 1]
-                B[i, j] = (0, j - 1)
-                if M[1, j - 1] > M[0, j - 1]:
-                    M[i, j] = M[1, j - 1]
-                    B[i, j] = (1, j - 1)
-            elif i == 1:
-                # Included segments can only transition from previosuly excluded segments:
-                M[i, j] = M[0, j - 1] + segments[j].Len
-                B[i, j] = (0, j - 1)
+        # First row holds excluded segments.
+        # The can transition from eiter exluded or included segments:
+        M[0, j] = M[0, j - 1]
+        B[0, j] = (0, j - 1)
+        if M[1, j - 1] > M[0, j - 1]:
+            M[0, j] = M[1, j - 1]
+            B[0, j] = (1, j - 1) 
+        # Included segments can only transition from previously excluded segments:
+        M[1, j] = M[0, j - 1] + segments[j].Len
+        B[1, j] = (0, j - 1)
 
     tlen = np.argmax(M[:, nr - 1])
     valid_segments = []
