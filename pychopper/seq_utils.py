@@ -123,13 +123,13 @@ def record_size(read, in_format='fastq'):
 
 
 def get_primers(primers):
-    "Load primers from fasta file"
+    """Load primers from fasta file"""
     all_primers = {}
-    for primer in readfq(primers):
-        all_primers[primer.Name] = primer.Seq
-        all_primers['-' + primer.Name] = reverse_complement(primer.Seq)
+    with FastxFile(primers) as fh:
+        for primer in fh:
+            all_primers[primer.name] = primer.sequence
+            all_primers['-' + primer.name] = reverse_complement(primer.sequence)
     return all_primers
-
 
 def errs_tab(n):
     """Generate list of error rates for qualities less than equal than n."""
