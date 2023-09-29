@@ -55,7 +55,8 @@ optional arguments:
   -g phmm_file         File with custom profile HMMs (None).
   -c config_file       File to specify primer configurations for each
                        direction (None).
-  -k kit               Use primer sequences from this kit (PCS109).
+  -k kit{PCS109,PCS110,PCS111,LSK114}
+                       Use primer sequences from this kit (PCS109).
   -q cutoff            Cutoff parameter (autotuned).
   -Q min_qual          Minimum mean base quality (7.0).
   -z min_len           Minimum segment length (50).
@@ -90,6 +91,8 @@ Example usage with default PCS109/DCS109 primers using the default pHMM backend:
 ```bash
 pychopper -r report.pdf -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
 ```
+
+
 
 Example usage with default PCS109/DCS109 primers using the edlib/parasail backend:
 
