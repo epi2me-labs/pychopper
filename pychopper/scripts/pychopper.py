@@ -235,8 +235,10 @@ def main():
         '-c', metavar='config_file', type=str, default=None,
         help="File to specify primer configurations for each direction (None).")
     parser.add_argument(
-        '-k', metavar='kit', type=str, default="PCS109",
-        help="Use primer sequences from this kit (PCS109).")
+        '-k', type=str, default="PCS109",
+        help="Use primer sequences from this kit (PCS109).",
+        choices=['PCS109', 'PCS110', 'PCS111', 'LSK114']
+    )
     parser.add_argument(
         '-q', metavar='cutoff', type=float, default=None,
         help="Cutoff parameter (autotuned).")
@@ -332,7 +334,12 @@ def main():
             "HMM": os.path.join(
                 os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
             "FAS": os.path.join(
-                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")}
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")},
+        "LSK114": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "LSK114_primers.fas")}
     }
 
     if args.g is None:
