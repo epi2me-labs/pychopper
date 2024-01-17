@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import six
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
@@ -68,10 +67,10 @@ class Report:
         """
         fig = plt.figure()
 
-        for label, data_arrays in six.iteritems(data_map):
+        for label, data_arrays in data_map.items():
             plt.plot(data_arrays[0], data_arrays[1], marker, label=label)
         if vlines is not None:
-            for label, pos in six.iteritems(vlines):
+            for label, pos in vlines.items():
                 plt.axvline(x=pos, label=label, color=vlcolor, lw=vlwitdh)
         if legend:
             plt.legend(loc=legend_loc)
@@ -95,11 +94,11 @@ class Report:
         """
         fig = plt.figure()
 
-        for label, data in six.iteritems(data_map):
+        for label, data in data_map.items():
             if len(data) > 0:
                 plt.hist(data, bins=bins, label=label, alpha=alpha)
         if vlines is not None:
-            for label, pos in six.iteritems(vlines):
+            for label, pos in vlines.items():
                 plt.axvline(x=pos, label=label)
         if legend:
             plt.legend(loc=legend_loc)

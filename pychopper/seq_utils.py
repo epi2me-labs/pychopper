@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from six.moves import reduce
+from functools import reduce
 from numpy.random import random
 from pysam import FastxFile
 from math import log
