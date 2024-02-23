@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
-
-from six.moves import reduce
-from numpy.random import random
-from pysam import FastxFile
-from math import log
-import sys
-from pychopper.common_structures import Seq
-
 """ Utilities manipulating biological sequences and formats. Extensions to biopython functionality.
 """
+
+from math import log
+import sys
+
+from numpy.random import random
+from pysam import FastxFile
+
+from pychopper.common_structures import Seq
 
 # Reverse complements of bases, taken from dragonet:
 comp = {
@@ -16,6 +15,7 @@ comp = {
     'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'x': 'x', 'n': 'n',
     '-': '-'
 }
+comp_trans = str.maketrans(''.join(comp.keys()), ''.join(comp.values()))
 
 
 def base_complement(k):
@@ -38,16 +38,14 @@ def base_complement(k):
 
 
 def reverse_complement(seq):
-    """ Return reverse complement of a string (base) sequence.
+    """Reverse complement sequence.
 
-    :param seq: Input sequence.
-    :returns: Reverse complement of input sequence.
-    :rtype: str
+    :param: input sequence string.
+
+    :returns: reverse-complemented string.
 
     """
-    if len(seq) == 0:
-        return seq
-    return reduce(lambda x, y: x + y, map(base_complement, seq[::-1]))
+    return seq.translate(comp_trans)[::-1]
 
 
 def readfq(fastq, sample=None, min_qual=0, rfq_sup={}):  # this is a generator function
