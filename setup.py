@@ -39,6 +39,10 @@ data_files = []
 extra_requires = {}
 extensions = []
 
+pymajor, pyminor = sys.version_info[0:2]
+if (pymajor < 3):
+    raise RuntimeError(
+        '`pychopper` is unsupported on Python version < 3.')
 
 setup(
     name=__pkg_name__,

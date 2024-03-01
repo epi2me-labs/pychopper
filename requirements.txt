@@ -1,7 +1,6 @@
 parasail
 biopython
 matplotlib
-six
 tqdm==4.26.0
 pandas
 numpy
