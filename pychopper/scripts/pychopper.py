@@ -237,7 +237,7 @@ def main():
     parser.add_argument(
         '-k', type=str, default="PCS109",
         help="Use primer sequences from this kit (PCS109).",
-        choices=['PCS109', 'PCS110', 'PCS111', 'LSK114']
+        choices=['PCS109', 'PCS110', 'PCS111', 'PCS114', 'LSK114', 'PCB111', 'PCB114']
     )
     parser.add_argument(
         '-q', metavar='cutoff', type=float, default=None,
@@ -331,6 +331,21 @@ def main():
                 os.path.dirname(primer_data.__file__), "PCS110_primers.fas")
         },
         "PCS111": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")},
+        "PCS114": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")},
+        "PCB111": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")},
+        "PCB114": {
             "HMM": os.path.join(
                 os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
             "FAS": os.path.join(
